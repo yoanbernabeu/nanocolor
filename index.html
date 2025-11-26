@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nano Color - Générateur de Coloriage</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Nunito', sans-serif; 
+            background-color: #E0F2FE; /* Light Blue */
+            background-image: 
+                radial-gradient(#3B82F6 2px, transparent 2px),
+                radial-gradient(#3B82F6 2px, transparent 2px);
+            background-size: 32px 32px;
+            background-position: 0 0, 16px 16px;
+        }
+        .bg-stripes {
+            background-image: linear-gradient(45deg, #000 25%, transparent 25%, transparent 50%, #000 50%, #000 75%, transparent 75%, transparent);
+            background-size: 20px 20px;
+            opacity: 0.1;
+        }
+        h1, h2, h3, button, label, .font-display { font-family: 'Fredoka', sans-serif; }
+        [x-cloak] { display: none !important; }
+        
+        /* Neo-Brutalism Classes */
+        .neo-box {
+            border: 3px solid #000;
+            box-shadow: 5px 5px 0px 0px #000;
+            transition: all 0.2s ease;
+        }
+        .neo-box:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 7px 7px 0px 0px #000;
+        }
+        .neo-box:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px 0px #000;
+        }
+        
+        .neo-card {
+            background: white;
+            border: 3px solid #000;
+            box-shadow: 8px 8px 0px 0px #000;
+            border-radius: 1rem;
+        }
+
+        .neo-input {
+            border: 3px solid #000;
+            box-shadow: 4px 4px 0px 0px #CBD5E1;
+            transition: all 0.2s;
+        }
+        .neo-input:focus {
+            box-shadow: 4px 4px 0px 0px #000;
+            outline: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 12px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-left: 3px solid #000; }
+        ::-webkit-scrollbar-thumb { background: #000; border: 2px solid #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-900" x-data="app()">
+
+    <!-- Header -->
+    <header class="bg-yellow-400 border-b-4 border-black p-4 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3 bg-white px-4 py-2 border-2 border-black rounded-full shadow-[4px_4px_0px_0px_#000]">
+                <span class="text-3xl animate-bounce">🍌</span>
+                <h1 class="text-xl md:text-2xl font-black tracking-wide">Nano<span class="text-indigo-600">Color</span></h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Quality Dropdown -->
+                <div class="relative" x-data="{ open: false }" @click.outside="open = false" x-show="apiKey">
+                    <button @click="open = !open" class="neo-box bg-white text-black px-2 md:px-3 py-2 rounded-xl font-bold text-xs md:text-sm flex items-center gap-1 md:gap-2 hover:bg-slate-50">
+                        <span>⚙️</span>
+                        <span class="hidden sm:inline" x-text="t[lang].qualityLabel + ':'"></span>
+                        <span x-text="resolution"></span>
+                    </button>
+                    <div x-show="open" class="absolute top-full right-0 mt-2 w-48 bg-white border-3 border-black rounded-xl shadow-[4px_4px_0px_0px_#000] overflow-hidden z-50" x-transition>
+                        <div class="p-2 text-xs font-bold text-slate-500 uppercase border-b-2 border-slate-100" x-text="t[lang].qualityTitle"></div>
+                        <template x-for="opt in ['1K', '2K', '4K']">
+                            <button 
+                                @click="resolution = opt; open = false" 
+                                class="w-full text-left px-4 py-2 font-bold hover:bg-purple-100 transition flex justify-between items-center"
+                                :class="resolution === opt ? 'bg-purple-50 text-purple-600' : ''">
+                                <span x-text="opt"></span>
+                                <span x-show="resolution === opt">✓</span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <button @click="toggleLang()" class="neo-box bg-white text-black px-3 md:px-4 py-2 rounded-xl font-bold uppercase text-xs md:text-sm flex items-center gap-2 hover:bg-slate-50">
+                    <span class="text-xl">🌍</span>
+                    <span x-text="lang"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow p-3 md:p-4 max-w-5xl mx-auto w-full">
+
+        <!-- Landing Page / Hero Section -->
+        <div x-show="!apiKey" class="text-center py-4 md:py-10" x-transition>
+            
+            <!-- Hero Title -->
+            <div class="mb-12 relative">
+                <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-64 h-64 bg-yellow-300 rounded-full blur-3xl opacity-50 -z-10"></div>
+                <h1 class="text-4xl md:text-5xl lg:text-7xl font-black text-slate-900 mb-4 md:mb-6 leading-tight">
+                    <span x-text="t[lang].heroTitle1"></span> <br>
+                    <span class="text-indigo-600 bg-white px-4 py-2 border-4 border-black shadow-[6px_6px_0px_0px_#000] transform -rotate-2 inline-block my-2" x-text="t[lang].heroTitleHighlight"></span> <br>
+                    <span x-text="t[lang].heroTitle2"></span>
+                </h1>
+                <p class="text-lg md:text-xl lg:text-2xl font-bold text-slate-600 mb-8 md:mb-10 max-w-2xl mx-auto leading-relaxed px-4" x-text="t[lang].heroSubtitle">
+                </p>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 text-left mb-12 md:mb-16 px-4">
+                <div class="neo-card bg-yellow-100 p-6 transform rotate-1 hover:rotate-0 transition duration-300">
+                    <div class="text-5xl mb-4">🎨</div>
+                    <h3 class="text-xl font-black mb-2" x-text="t[lang].feature1Title"></h3>
+                    <p class="font-bold text-slate-700 leading-snug" x-text="t[lang].feature1Text"></p>
+                </div>
+                <div class="neo-card bg-green-100 p-6 transform -rotate-1 hover:rotate-0 transition duration-300">
+                    <div class="text-5xl mb-4">⚡️</div>
+                    <h3 class="text-xl font-black mb-2" x-text="t[lang].feature2Title"></h3>
+                    <p class="font-bold text-slate-700 leading-snug" x-text="t[lang].feature2Text"></p>
+                </div>
+                <div class="neo-card bg-pink-100 p-6 transform rotate-1 hover:rotate-0 transition duration-300">
+                    <div class="text-5xl mb-4">🖨️</div>
+                    <h3 class="text-xl font-black mb-2" x-text="t[lang].feature3Title"></h3>
+                    <p class="font-bold text-slate-700 leading-snug" x-text="t[lang].feature3Text"></p>
+                </div>
+            </div>
+
+            <!-- API Key Section -->
+            <div class="neo-card bg-white border-4 border-black p-8 max-w-2xl mx-auto relative overflow-hidden transform hover:scale-105 transition duration-300">
+                <div class="absolute top-0 left-0 w-full h-full bg-stripes pointer-events-none"></div>
+                <div class="relative z-10">
+                    <div class="inline-block bg-orange-500 text-white text-3xl p-3 rounded-full border-4 border-black mb-4 shadow-[3px_3px_0px_0px_#000]">🔑</div>
+                    <h2 class="text-3xl font-black mb-4" x-text="t[lang].welcomeTitle"></h2>
+                    <p class="text-lg font-bold mb-6 max-w-lg mx-auto" x-text="t[lang].welcomeText"></p>
+                    <div class="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
+                        <input type="password" x-model="tempKey" :placeholder="t[lang].apiKeyPlaceholder" class="neo-input flex-1 p-4 rounded-xl text-lg">
+                        <button @click="saveKey()" class="neo-box bg-green-400 text-black px-8 py-4 rounded-xl font-black text-xl hover:bg-green-500" x-text="t[lang].btnGo">
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="apiKey" x-transition>
+            
+            <!-- Main Generator Form -->
+            <div x-show="!loading && !resultUrl" class="neo-card p-4 md:p-6 lg:p-10 relative">
+                <!-- Decorative Elements -->
+                <div class="absolute -top-4 -left-4 w-12 h-12 bg-pink-400 border-4 border-black rounded-full z-10"></div>
+                <div class="absolute -bottom-4 -right-4 w-16 h-16 bg-blue-400 border-4 border-black rounded-full z-10 flex items-center justify-center text-2xl">✏️</div>
+
+                <h2 class="text-2xl md:text-3xl font-black text-center mb-4 md:mb-6 uppercase tracking-tight transform -rotate-1" x-text="t[lang].title"></h2>
+
+                <div class="mb-4 md:mb-6">
+                    <label class="block text-lg font-black mb-2 ml-1 flex items-center gap-2">
+                        <span class="bg-black text-white w-7 h-7 rounded-full flex items-center justify-center text-xs">1</span>
+                        <span x-text="t[lang].labelPrompt"></span>
+                    </label>
+                    <textarea 
+                        x-model="prompt" 
+                        class="neo-input w-full p-3 bg-white rounded-2xl h-24 md:h-20 resize-none text-base md:text-lg font-medium mb-3"
+                        :placeholder="t[lang].placeholder"></textarea>
+                    
+                    <!-- Image Upload Section -->
+                    <div class="bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-3 text-center hover:bg-slate-100 transition relative">
+                        <input type="file" @change="handleImageUpload" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                        
+                        <div x-show="imageInputs.length === 0" class="flex flex-col items-center gap-2 text-slate-500">
+                            <span class="text-xl">📷</span>
+                            <span class="font-bold text-xs" x-text="t[lang].uploadLabel"></span>
+                            <span class="text-xs">(Max 14)</span>
+                        </div>
+
+                        <div x-show="imageInputs.length > 0" class="relative z-10">
+                            <div class="flex flex-wrap gap-2 justify-center mb-2">
+                                <template x-for="(img, index) in imageInputs" :key="index">
+                                    <div class="relative group">
+                                        <img :src="img" class="h-12 w-12 object-cover rounded-lg border-2 border-black shadow-sm">
+                                        <button @click.prevent="removeImage(index)" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold border border-white shadow-sm hover:bg-red-600">×</button>
+                                    </div>
+                                </template>
+                            </div>
+                            <p class="font-bold text-xs text-green-600" x-text="imageInputs.length + ' ' + (imageInputs.length > 1 ? 'images chargées' : 'image chargée') + ' !'"></p>
+                            <p class="text-xs text-slate-400 mt-1">Cliquez pour en ajouter d'autres</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
+                    <div class="bg-blue-50 p-3 rounded-2xl border-2 border-black border-dashed">
+                        <label class="block text-base font-black mb-2 flex items-center gap-2">
+                            <span class="bg-blue-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs border-2 border-black">2</span>
+                            <span x-text="t[lang].labelAge"></span>
+                        </label>
+                        <div class="space-y-1">
+                            <template x-for="opt in ['toddler', 'child', 'teen']">
+                                <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-blue-100 transition">
+                                    <input type="radio" x-model="age" :value="opt" class="w-5 h-5 border-2 border-black text-blue-600 focus:ring-0">
+                                    <span class="font-bold text-base" x-text="t[lang][opt === 'toddler' ? 'age1' : opt === 'child' ? 'age2' : 'age3']"></span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-pink-50 p-3 rounded-2xl border-2 border-black border-dashed">
+                        <label class="block text-base font-black mb-2 flex items-center gap-2">
+                            <span class="bg-pink-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs border-2 border-black">3</span>
+                            <span x-text="t[lang].labelStyle"></span>
+                        </label>
+                        <div class="space-y-1">
+                            <template x-for="opt in ['classic', 'manga', 'mandala', 'pixel']">
+                                <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-pink-100 transition">
+                                    <input type="radio" x-model="style" :value="opt" class="w-5 h-5 border-2 border-black text-pink-600 focus:ring-0">
+                                    <span class="font-bold text-base" x-text="t[lang][opt === 'classic' ? 'style1' : opt === 'manga' ? 'style2' : opt === 'mandala' ? 'style3' : 'style4']"></span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <button 
+                    @click="generate()" 
+                    :disabled="!prompt"
+                    class="w-full neo-box bg-indigo-500 text-white text-lg md:text-xl py-3 md:py-4 rounded-2xl font-black uppercase tracking-wider hover:bg-indigo-600 disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 flex items-center justify-center gap-3">
+                    <span>🚀</span> <span x-text="t[lang].btnGenerate"></span>
+                </button>
+            </div>
+
+            <!-- Loading State -->
+            <div x-show="loading" class="text-center py-8 md:py-12" x-cloak>
+                <div class="neo-card inline-block p-6 md:p-8 bg-white rotate-2">
+                    <div class="mb-4 md:mb-6 animate-bounce text-5xl md:text-7xl">🤖</div>
+                    <h3 class="text-2xl md:text-3xl font-black text-black animate-pulse mb-2" x-text="t[lang].loading"></h3>
+                    <p class="text-slate-600 font-mono bg-slate-200 inline-block px-2 md:px-3 py-1 rounded border-2 border-black text-xs md:text-sm" x-text="statusText"></p>
+                    
+                    <div class="mt-6 md:mt-8 w-48 md:w-64 h-5 md:h-6 bg-white border-4 border-black rounded-full mx-auto overflow-hidden p-1">
+                        <div class="h-full bg-green-400 rounded-full animate-[width_2s_ease-in-out_infinite]" style="width: 50%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result State -->
+            <div x-show="resultUrl" class="text-center" x-cloak>
+                <div class="neo-card p-4 inline-block mb-10 relative bg-white transform -rotate-1">
+                    <div class="absolute -top-6 -right-6 bg-yellow-400 text-black border-4 border-black rounded-full p-3 shadow-[4px_4px_0px_0px_#000] z-20 animate-bounce">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <img :src="resultUrl" class="max-w-full max-h-[65vh] rounded-lg border-2 border-black" alt="Coloriage généré">
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-4 md:gap-6">
+                    <button @click="reset()" class="neo-box bg-white text-black px-6 md:px-8 py-3 md:py-4 rounded-xl font-black text-base md:text-lg hover:bg-slate-100 transition flex items-center justify-center gap-2">
+                        <span>🔄</span> <span x-text="t[lang].btnNew"></span>
+                    </button>
+                    <a :href="resultUrl" download="coloriage-nano.png" target="_blank" class="neo-box bg-green-500 text-white px-6 md:px-8 py-3 md:py-4 rounded-xl font-black text-base md:text-lg hover:bg-green-600 transition flex items-center justify-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span x-text="t[lang].btnDownload"></span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div x-show="error" class="mt-8 neo-card bg-red-100 border-red-500 text-red-900 p-6 max-w-2xl mx-auto" x-cloak>
+                <div class="flex items-start gap-4">
+                    <div class="text-4xl">💥</div>
+                    <div class="text-left">
+                        <p class="font-black text-xl mb-1" x-text="t[lang].errorTitle"></p>
+                        <p x-text="error" class="font-medium"></p>
+                        <button @click="error = null" class="mt-4 bg-red-500 text-white px-4 py-2 rounded-lg border-2 border-black font-bold hover:bg-red-600 shadow-[2px_2px_0px_0px_#000]" x-text="t[lang].btnClose"></button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="p-4 md:p-6 text-center font-bold text-slate-500 border-t-4 border-black bg-white mt-auto">
+        <p>🎨 <span x-text="t[lang].footer"></span> <span class="text-black">Nano Banana Pro</span> & <span class="text-black">Replicate</span></p>
+    </footer>
+
+    <script>
+        function app() {
+            return {
+                // ----------------------------------------------------
+                // CONFIG & STATE
+                // ----------------------------------------------------
+                apiKey: localStorage.getItem('nano_api_key') || '',
+                proxyUrl: 'https://corsproxy.io/?',
+                tempKey: '',
+                lang: 'fr',
+                
+                // User Input
+                prompt: '',
+                age: 'child',
+                style: 'classic',
+                resolution: '1K',
+                showOptions: false,
+                imageInputs: [], // Array of Base64 images
+                
+                // UI State
+                loading: false,
+                resultUrl: null,
+                statusText: '',
+                error: null,
+
+                // Traductions
+                t: {
+                    fr: {
+                        title: 'Créer mon Coloriage',
+                        labelPrompt: 'Je veux colorier...',
+                        placeholder: 'Ex: Un dinosaure qui fait du skate...',
+                        labelAge: 'Difficulté',
+                        age1: 'Tout-petit (Traits épais)',
+                        age2: 'Enfant (Classique)',
+                        age3: 'Expert (Détails fins)',
+                        labelStyle: 'Style du dessin',
+                        style1: 'Classique',
+                        style2: 'Manga',
+                        style3: 'Mandala',
+                        style4: 'Pixel Art',
+                        btnGenerate: 'Fabriquer le dessin !',
+                        loading: 'Nos robots dessinent...',
+                        btnNew: 'En faire un autre',
+                        btnDownload: 'Télécharger',
+                        btnDownload: 'Télécharger',
+                        welcomeTitle: 'Commencer l\'aventure',
+                        welcomeText: 'Pour activer le générateur, entre ta clé API Replicate ci-dessous.',
+                        apiKeyPlaceholder: 'Clé API (r8_...)',
+                        btnGo: 'C\'EST PARTI !',
+                        errorTitle: 'Oups ! Une erreur...',
+                        btnClose: 'Fermer',
+                        footer: 'Propulsé par',
+                        heroTitle1: 'Le Générateur de',
+                        heroTitleHighlight: 'Coloriages',
+                        heroTitle2: 'Infini !',
+                        heroSubtitle: 'Crée des dessins uniques pour tes enfants (ou pour toi !) en quelques secondes grâce à l\'IA.',
+                        feature1Title: 'Styles Variés',
+                        feature1Text: 'Du cartoon au mandala complexe, il y en a pour tous les goûts.',
+                        feature2Title: 'Ultra Rapide',
+                        feature2Text: 'Génère un nouveau dessin prêt à imprimer en quelques secondes.',
+                        feature3Title: 'Prêt à imprimer',
+                        feature3Text: 'Format A4 optimisé, contours nets et fond blanc pur.',
+                        qualityLabel: 'Qualité',
+                        qualityTitle: 'Résolution Image',
+                        uploadLabel: 'Ajouter des images modèles (optionnel)'
+                    },
+                    en: {
+                        title: 'Create Coloring Page',
+                        labelPrompt: 'I want to color...',
+                        placeholder: 'Ex: A dinosaur skateboarding...',
+                        labelAge: 'Difficulty',
+                        age1: 'Toddler (Thick lines)',
+                        age2: 'Child (Classic)',
+                        age3: 'Expert (Fine details)',
+                        labelStyle: 'Drawing Style',
+                        style1: 'Classic',
+                        style2: 'Manga',
+                        style3: 'Mandala',
+                        style4: 'Pixel Art',
+                        btnGenerate: 'Make the drawing!',
+                        loading: 'Robots are drawing...',
+                        btnNew: 'Make another',
+                        btnDownload: 'Download',
+                        btnDownload: 'Download',
+                        welcomeTitle: 'Start the Adventure',
+                        welcomeText: 'To activate the generator, enter your Replicate API key below.',
+                        apiKeyPlaceholder: 'API Key (r8_...)',
+                        btnGo: 'LET\'S GO!',
+                        errorTitle: 'Oops! An error...',
+                        btnClose: 'Close',
+                        footer: 'Powered by',
+                        heroTitle1: 'The Infinite',
+                        heroTitleHighlight: 'Coloring Page',
+                        heroTitle2: 'Generator!',
+                        heroSubtitle: 'Create unique drawings for your kids (or yourself!) in seconds using AI.',
+                        feature1Title: 'Various Styles',
+                        feature1Text: 'From cartoons to complex mandalas, there is something for everyone.',
+                        feature2Title: 'Blazing Fast',
+                        feature2Text: 'Generate a new print-ready drawing in less than 10 seconds.',
+                        feature3Title: 'Print Ready',
+                        feature3Text: 'Optimized A4 format, sharp outlines, and pure white background.',
+                        qualityLabel: 'Quality',
+                        qualityTitle: 'Image Resolution',
+                        uploadLabel: 'Add reference images (optional)'
+                    }
+                },
+
+                // ----------------------------------------------------
+                // LOGIQUE METIER
+                // ----------------------------------------------------
+                
+                toggleLang() { this.lang = this.lang === 'fr' ? 'en' : 'fr'; },
+                
+                saveKey() {
+                    if(this.tempKey.startsWith('r8_')) {
+                        this.apiKey = this.tempKey;
+                        localStorage.setItem('nano_api_key', this.tempKey);
+                    } else { alert('La clé doit commencer par r8_'); }
+                },
+
+                handleImageUpload(e) {
+                    const files = Array.from(e.target.files);
+                    if (!files.length) return;
+                    
+                    // Check max images (14 max total)
+                    if (this.imageInputs.length + files.length > 14) {
+                        alert("Maximum 14 images autorisées !");
+                        return;
+                    }
+
+                    files.forEach(file => {
+                        if (file.size > 5 * 1024 * 1024) {
+                            alert(`L'image ${file.name} est trop volumineuse (Max 5MB)`);
+                            return;
+                        }
+
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            this.imageInputs.push(e.target.result);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                    
+                    // Reset input value to allow re-selecting same files if needed
+                    e.target.value = '';
+                },
+
+                removeImage(index) {
+                    this.imageInputs.splice(index, 1);
+                },
+
+                reset() {
+                    this.resultUrl = null;
+                    this.prompt = '';
+                    this.imageInputs = [];
+                    this.error = null;
+                },
+
+                async generate() {
+                    this.loading = true;
+                    this.error = null;
+                    this.statusText = 'Initialisation...';
+
+                    // 1. Prompt Engineering
+                    let agePrompt = "";
+                    if (this.age === 'toddler') agePrompt = "thick outlines, simple shapes, minimalist, low detail, for babies";
+                    if (this.age === 'child') agePrompt = "disney style, clear lines, medium detail";
+                    if (this.age === 'teen') agePrompt = "complex intricate patterns, zentangle, fine lines, highly detailed";
+
+                    let stylePrompt = "";
+                    if (this.style === 'classic') stylePrompt = "classic coloring book style, clean outlines, traditional";
+                    if (this.style === 'manga') stylePrompt = "manga style, anime line art, dynamic, expressive eyes";
+                    if (this.style === 'mandala') stylePrompt = "mandala pattern, symmetrical, geometric, zentangle";
+                    if (this.style === 'pixel') stylePrompt = "pixel art style, 8-bit retro, blocky, pixelated";
+
+                    const enhancedPrompt = `coloring page, black and white, ${this.prompt}, ${stylePrompt}, ${agePrompt}, white background, uncolored, line art, ink drawing, clean vector lines, no shading, high contrast, monochrome`;
+                    
+                    const negativePrompt = "color, colors, red, blue, green, yellow, 3d, realistic photo, gradient, shading, filled, grey, grayscale, blurred, watermark, text, dark background";
+
+                    const inputData = {
+                        prompt: enhancedPrompt,
+                        negative_prompt: negativePrompt,
+                        aspect_ratio: this.imageInputs.length > 0 ? "match_input_image" : "3:4",
+                        safety_filter_level: "block_only_high",
+                        resolution: this.resolution
+                    };
+
+                    if (this.imageInputs.length > 0) {
+                        inputData.image_input = this.imageInputs;
+                    }
+
+                    try {
+                        // 2. Appel API
+                        const modelUrl = "https://api.replicate.com/v1/models/google/nano-banana-pro/predictions";
+                        const createUrl = this.proxyUrl + modelUrl;
+
+                        const response = await fetch(createUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Token ${this.apiKey}`,
+                                'Content-Type': 'application/json',
+                                'x-requested-with': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({ input: inputData })
+                        });
+
+                        if (!response.ok) {
+                            const txt = await response.text();
+                            throw new Error(`Erreur API: ${response.status} - ${txt}`);
+                        }
+
+                        let prediction = await response.json();
+                        const predictionGetUrl = prediction.urls.get;
+                        const startTime = Date.now();
+
+                        // 3. Polling
+                        while (prediction.status !== 'succeeded' && prediction.status !== 'failed' && prediction.status !== 'canceled') {
+                            const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+                            this.statusText = `Status: ${prediction.status} (${elapsed}s)`;
+                            
+                            await new Promise(r => setTimeout(r, 1500));
+                            
+                            const separator = predictionGetUrl.includes('?') ? '&' : '?';
+                            const urlWithCacheBuster = `${predictionGetUrl}${separator}t=${Date.now()}`;
+                            const pollUrl = this.proxyUrl + urlWithCacheBuster;
+
+                            const pollResponse = await fetch(pollUrl, {
+                                headers: { 
+                                    'Authorization': `Token ${this.apiKey}`,
+                                    'x-requested-with': 'XMLHttpRequest'
+                                }
+                            });
+
+                            if (pollResponse.ok) {
+                                prediction = await pollResponse.json();
+                            }
+                        }
+
+                        if (prediction.status !== 'succeeded') {
+                            throw new Error(`Échec: ${prediction.status}`);
+                        }
+
+                        this.resultUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
+
+                    } catch (e) {
+                        console.error(e);
+                        this.error = e.message;
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            };
+        }
+    </script>
+</body>
+</html>
