@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nano Color - Générateur de Coloriage</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎨</text></svg>">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
@@ -167,6 +168,9 @@
                         <input type="password" x-model="tempKey" :placeholder="t[lang].apiKeyPlaceholder" class="neo-input flex-1 p-4 rounded-xl text-lg">
                         <button @click="saveKey()" class="neo-box bg-green-400 text-black px-8 py-4 rounded-xl font-black text-xl hover:bg-green-500" x-text="t[lang].btnGo">
                         </button>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <a href="https://replicate.com/account/api-tokens" target="_blank" class="text-sm font-bold text-slate-500 hover:text-indigo-600 underline decoration-2 decoration-indigo-300 hover:decoration-indigo-600 transition-all" x-text="t[lang].findKey"></a>
                     </div>
                 </div>
             </div>
@@ -373,7 +377,8 @@
                         feature3Text: 'Format A4 optimisé, contours nets et fond blanc pur.',
                         qualityLabel: 'Qualité',
                         qualityTitle: 'Résolution Image',
-                        uploadLabel: 'Ajouter des images modèles (optionnel)'
+                        uploadLabel: 'Ajouter des images modèles (optionnel)',
+                        findKey: 'Où trouver ma clé API ?'
                     },
                     en: {
                         title: 'Create Coloring Page',
@@ -412,7 +417,9 @@
                         feature3Text: 'Optimized A4 format, sharp outlines, and pure white background.',
                         qualityLabel: 'Quality',
                         qualityTitle: 'Image Resolution',
-                        uploadLabel: 'Add reference images (optional)'
+                        qualityTitle: 'Image Resolution',
+                        uploadLabel: 'Add reference images (optional)',
+                        findKey: 'Where to find my API key?'
                     }
                 },
 
